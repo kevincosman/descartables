@@ -1,0 +1,3 @@
+# Netlify publica solo la copia para consultar, no el resto del repositorio.
+[build]
+  publish = "comparador/publicar"
