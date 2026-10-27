@@ -1,0 +1,7 @@
+{
+  "name": "comparador-proveedores",
+  "private": true,
+  "description": "Arma el comparador de precios de proveedores",
+  "scripts": { "procesar": "node procesar.js" },
+  "dependencies": { "pdfjs-dist": "3.11.174", "xlsx": "0.18.5" }
+}

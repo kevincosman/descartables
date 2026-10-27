@@ -1,0 +1,1195 @@
+<title>Comparador de Proveedores</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: barra de búsqueda fija arriba, lista de resultados tipo "planilla de compras" debajo; en celular cada fila pasa a tarjeta. */
+:root {
+  --bg: #eef2f0;
+  --surface: #ffffff;
+  --ink: #15201b;
+  --muted: #5a6762;
+  --line: #d5ddd9;
+  --accent: #1d6b57;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcece6;
+  --good: #16703f;
+  --good-soft: #dff1e5;
+  --warn: #9a5a06;
+  --warn-soft: #f8ead3;
+  --bad: #a3322a;
+  --bad-soft: #f8e0dd;
+  --velo: rgba(21, 32, 27, 0.45);
+  --p-darnel: #2b5aa6;
+  --p-vassoi: #8a5b14;
+  --p-bolsatodo: #8b3a75;
+  --p-a: #2f7d8c;
+  --p-b: #6a4fb0;
+  --p-c: #a14a2a;
+  --p-d: #4f7a1f;
+  --display: "Archivo", "Arial Narrow", system-ui, sans-serif;
+  --body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111715; --surface: #18201d; --ink: #e6ece9; --muted: #9aa8a2; --line: #2c3833;
+    --accent: #5cc0a3; --accent-ink: #0d1613; --accent-soft: #1d3a31;
+    --good: #6fd39a; --good-soft: #173826; --warn: #f0b45c; --warn-soft: #3a2c14; --bad: #f08a80; --bad-soft: #3d1d1a;
+    --velo: rgba(0, 0, 0, 0.6);
+    --p-darnel: #86aef0; --p-vassoi: #e0b268; --p-bolsatodo: #e595cf;
+    --p-a: #72c6d4; --p-b: #b7a2f0; --p-c: #ee9b7b; --p-d: #a6d36e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111715; --surface: #18201d; --ink: #e6ece9; --muted: #9aa8a2; --line: #2c3833;
+  --accent: #5cc0a3; --accent-ink: #0d1613; --accent-soft: #1d3a31;
+  --good: #6fd39a; --good-soft: #173826; --warn: #f0b45c; --warn-soft: #3a2c14; --bad: #f08a80; --bad-soft: #3d1d1a;
+  --velo: rgba(0, 0, 0, 0.6);
+  --p-darnel: #86aef0; --p-vassoi: #e0b268; --p-bolsatodo: #e595cf;
+  --p-a: #72c6d4; --p-b: #b7a2f0; --p-c: #ee9b7b; --p-d: #a6d36e;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.num { font-variant-numeric: tabular-nums; }
+.oculto-visual { position: absolute; left: -9999px; }
+
+/* Barra superior */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top .wrap { padding-block: 14px 12px; display: grid; gap: 12px; }
+.brand { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+.brand h1 { margin: 0; font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size: 1.35rem; letter-spacing: -0.01em; text-transform: uppercase; }
+.brand h1 span { color: var(--accent); }
+.brand .der { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand .sub { color: var(--muted); font-size: 0.82rem; }
+.search { position: relative; }
+.search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: var(--muted); pointer-events: none; }
+#q { width: 100%; font: inherit; font-size: 1.1rem; padding: 13px 44px 13px 44px; border: 2px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
+#q:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+#limpiar { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--muted); font-size: 1.4rem; line-height: 1; padding: 6px 8px; cursor: pointer; border-radius: 6px; }
+#limpiar:hover { color: var(--ink); }
+.controles { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.provs { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; font: inherit; font-size: 0.85rem; font-weight: 600; padding: 5px 11px 5px 9px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.chip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.chip .edad { font-weight: 500; color: var(--muted); font-size: 0.78rem; }
+.chip[aria-pressed="false"] { opacity: 0.5; text-decoration: line-through; }
+.chip-raros { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.der-controles { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
+.orden { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--muted); }
+.orden select { font: inherit; font-size: 0.85rem; color: var(--ink); background: var(--surface); border: 1.5px solid var(--line); border-radius: 8px; padding: 5px 8px; }
+
+/* Resumen */
+.resumen { padding-block: 16px 8px; display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; justify-content: space-between; }
+.resumen .cuenta { font-family: var(--display); font-stretch: 85%; font-weight: 700; font-size: 1.05rem; }
+.resumen .sinon { color: var(--muted); font-size: 0.83rem; }
+.resumen .sinon b { color: var(--ink); font-weight: 600; }
+
+/* Tabla de resultados */
+.tabla { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.fila { display: grid; grid-template-columns: 148px minmax(0, 1fr) 200px 128px 128px; gap: 0 16px; padding: 12px 16px; border-top: 1px solid var(--line); align-items: start; }
+.fila:first-child { border-top: 0; }
+.cab { background: var(--bg); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-block: 9px; align-items: end; }
+.cab .r, .fila .r { text-align: right; }
+.prov { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.85rem; color: var(--c); }
+.prov::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--c); flex: none; }
+.desc { font-weight: 600; overflow-wrap: anywhere; }
+.meta { color: var(--muted); font-size: 0.8rem; margin-top: 2px; overflow-wrap: anywhere; }
+.meta .cod { font-variant-numeric: tabular-nums; }
+.pres { font-size: 0.85rem; min-width: 0; }
+.pres .p { font-weight: 600; font-variant-numeric: tabular-nums; }
+.pres .l { color: var(--muted); font-size: 0.78rem; }
+.unit { font-weight: 700; font-size: 1.02rem; font-variant-numeric: tabular-nums; }
+.unit.con { font-weight: 600; color: var(--muted); font-size: 0.95rem; }
+.na { color: var(--muted); font-weight: 400; font-size: 0.8rem; }
+.lbl { display: none; }
+.pills { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 4px; }
+.pill { display: inline-block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
+.pill.mejor { background: var(--good-soft); color: var(--good); }
+.pill.raro { background: var(--warn-soft); color: var(--warn); }
+.pill.corregido { background: var(--accent-soft); color: var(--accent); }
+.fila.es-mejor { background: color-mix(in srgb, var(--good-soft) 45%, transparent); }
+mark { background: var(--accent-soft); color: inherit; border-radius: 2px; padding: 0 1px; }
+.var { font-size: 0.76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.var.raro { color: var(--warn); font-weight: 700; }
+.mini { font: inherit; font-size: 0.76rem; font-weight: 600; padding: 2px 8px; margin-top: 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+.mini:hover { color: var(--accent); border-color: var(--accent); }
+.acciones-fila { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+
+/* Corregir cantidad */
+.corr { display: grid; gap: 6px; padding: 8px; border: 1.5px solid var(--accent); border-radius: 8px; background: var(--bg); }
+.corr label { font-size: 0.76rem; font-weight: 600; color: var(--muted); display: grid; gap: 3px; }
+.corr input { font: inherit; width: 100%; padding: 5px 8px; border: 1.5px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.corr .botones { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Selección para comparar */
+.sel { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; }
+.sel input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); cursor: pointer; flex: none; }
+.fila.marcada { background: var(--accent-soft); }
+.fila.marcada.es-mejor { background: var(--accent-soft); }
+.dif { font-size: 0.78rem; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.dif.cero { color: var(--good); }
+.dif.mas { color: var(--bad); }
+.barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--ink); color: var(--bg);
+  padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.barra .wrap { padding-block: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.barra .n { font-weight: 700; font-variant-numeric: tabular-nums; }
+.barra .acciones { display: flex; gap: 8px; }
+.btn-claro { font: inherit; font-weight: 600; font-size: 0.9rem; padding: 8px 14px; border-radius: 8px; border: 1.5px solid currentColor; background: transparent; color: inherit; cursor: pointer; }
+.btn-lleno { font: inherit; font-weight: 700; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.btn-lleno:disabled { opacity: 0.5; cursor: default; }
+body.con-barra main { padding-bottom: 72px; }
+.vista-cab { padding-block: 16px 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.vista-cab h2 { margin: 0; font-family: var(--display); font-stretch: 85%; font-weight: 800; font-size: 1.3rem; text-transform: uppercase; }
+.vista-cab .acciones { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-sec { font: inherit; font-weight: 600; font-size: 0.88rem; padding: 7px 13px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn-sec:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sec.peligro { color: var(--bad); }
+.separador { padding: 8px 16px; border-top: 1px solid var(--line); background: var(--bg); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.separador + .fila { border-top: 0; }
+.mas { display: flex; justify-content: center; padding-block: 16px; }
+.btn { font: inherit; font-weight: 600; font-size: 0.9rem; padding: 9px 18px; border-radius: 8px; border: 1.5px solid var(--accent); background: var(--surface); color: var(--accent); cursor: pointer; }
+.btn:hover { background: var(--accent-soft); }
+.vacio { padding: 36px 16px; text-align: center; color: var(--muted); }
+.sugerencias { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+.sug { font: inherit; font-size: 0.88rem; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.sug:hover { border-color: var(--accent); color: var(--accent); }
+.explica { color: var(--muted); font-size: 0.86rem; max-width: 75ch; margin: 6px 0 0; }
+
+/* Listas cargadas */
+.listas { padding-block: 28px 40px; display: grid; gap: 12px; }
+.listas h2 { margin: 0; font-family: var(--display); font-stretch: 85%; font-weight: 700; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.grid-listas { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; }
+.lista { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 8px; font-size: 0.86rem; align-content: start; }
+.lista .n { font-weight: 700; font-size: 1rem; color: var(--c); }
+.lista dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; }
+.lista dt { color: var(--muted); }
+.lista dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.estado { display: inline-block; padding: 1px 7px; border-radius: 4px; font-weight: 600; font-size: 0.78rem; }
+.estado.ok { background: var(--good-soft); color: var(--good); }
+.estado.med { background: var(--warn-soft); color: var(--warn); }
+.estado.viejo { background: var(--bad-soft); color: var(--bad); }
+.nota { color: var(--muted); font-size: 0.82rem; max-width: 70ch; }
+
+/* Panel para cargar listas */
+.panel { position: fixed; inset: 0; z-index: 20; background: var(--velo); display: flex; justify-content: center; align-items: flex-start; overflow-y: auto;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.panel-caja { background: var(--surface); border-radius: 14px; width: 100%; max-width: 760px; margin-block: 24px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25); }
+.panel-cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.panel-cab h2 { margin: 0; font-family: var(--display); font-stretch: 85%; font-weight: 800; font-size: 1.2rem; text-transform: uppercase; }
+.panel-cab button { border: 0; background: none; font-size: 1.6rem; line-height: 1; color: var(--muted); cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.panel-cuerpo { padding: 16px 20px 20px; display: grid; gap: 18px; }
+.paso { display: grid; gap: 10px; }
+.paso h3 { margin: 0; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 14px; }
+.campo { display: grid; gap: 4px; font-size: 0.84rem; font-weight: 600; min-width: 0; }
+.campo input, .campo select { font: inherit; font-weight: 400; padding: 7px 9px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); width: 100%; min-width: 0; }
+.campo .ayuda { font-weight: 400; color: var(--muted); font-size: 0.78rem; }
+.aviso { padding: 10px 12px; border-radius: 8px; font-size: 0.86rem; }
+.aviso.info { background: var(--accent-soft); }
+.aviso.error { background: var(--bad-soft); color: var(--bad); }
+.aviso.alerta { background: var(--warn-soft); color: var(--warn); }
+.aviso a { color: inherit; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.stat { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.stat b { display: block; font-family: var(--display); font-stretch: 85%; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 0.78rem; }
+.stat.alerta b { color: var(--warn); }
+.mini-tabla { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.mini-tabla th { text-align: left; font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.mini-tabla td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mini-tabla .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.scroll-x { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+.radios { display: grid; gap: 6px; font-size: 0.86rem; }
+.radios label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.radios input[type="number"] { width: 90px; font: inherit; padding: 4px 6px; border: 1.5px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.panel-pie { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 30; background: var(--ink); color: var(--bg);
+  padding: 10px 16px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; max-width: min(92vw, 520px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); }
+
+@media (max-width: 760px) {
+  .cab { display: none; }
+  .fila { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 14px; }
+  .fila > .c-prov { grid-column: 1 / -1; }
+  .fila > .c-prod { grid-column: 1 / -1; }
+  .fila > .c-pres { grid-column: 1 / -1; }
+  .fila > .c-sin, .fila > .c-con { text-align: left; display: flex; gap: 6px; align-items: baseline; }
+  .fila > .c-con { justify-content: flex-end; }
+  .lbl { display: inline; font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .brand h1 { font-size: 1.15rem; }
+  .panel-caja { margin-block: 0; }
+  .panel-cuerpo, .panel-cab { padding-inline: 14px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fila { transition: background-color 0.15s; }
+}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Comparador <span>de proveedores</span></h1>
+      <div class="der">
+        <span class="sub" id="sub"></span>
+        <button class="btn-lleno" type="button" id="btn-cargar" hidden>Cargar lista</button>
+      </div>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <label for="q" class="oculto-visual">Buscar producto</label>
+      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Buscá un producto: vaso termico 180, pote souffle 2 oz, bandeja F-100…">
+      <button id="limpiar" type="button" aria-label="Borrar búsqueda">×</button>
+    </div>
+    <div class="controles">
+      <div class="provs" id="provs" role="group" aria-label="Proveedores"></div>
+      <div class="der-controles">
+        <button type="button" class="chip chip-raros" id="btn-raros" hidden></button>
+        <label class="orden" for="orden">Ordenar
+          <select id="orden">
+            <option value="unit">Precio por unidad</option>
+            <option value="pres">Precio por presentación</option>
+            <option value="prov">Proveedor</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="vista-cab" id="vista-cab" hidden>
+    <div>
+      <h2 id="vista-titulo"></h2>
+      <p class="explica" id="vista-explica"></p>
+    </div>
+    <div class="acciones">
+      <button class="btn-sec" type="button" id="btn-volver">← Volver a buscar</button>
+      <button class="btn-sec peligro" type="button" id="btn-vaciar">Vaciar selección</button>
+    </div>
+  </div>
+  <div class="resumen"><div class="cuenta num" id="cuenta"></div><div class="sinon" id="sinon"></div></div>
+  <div id="resultados"></div>
+  <div class="mas" id="mas" hidden><button class="btn" type="button" id="btn-mas">Mostrar más</button></div>
+
+  <section class="listas" aria-labelledby="t-listas">
+    <h2 id="t-listas">Listas cargadas</h2>
+    <div class="grid-listas" id="listas"></div>
+    <p class="nota">Todos los precios se muestran <b>sin IVA</b> y <b>con IVA (21%)</b>, ya con el descuento de cada proveedor aplicado.
+      El precio por unidad se calcula dividiendo el precio de la presentación (caja, bulto, paquete) por la cantidad que trae.
+      Cuando la cantidad no figura en la lista (productos por kilo o por metro, por ejemplo) se muestra "—"; si sabés cuántas trae, usá "Corregir cantidad".
+      Un precio se marca como <b>raro</b> cuando cambió 25% o más respecto de la lista anterior de ese proveedor.
+      La búsqueda entiende abreviaturas (TERM = térmico), sinónimos (térmico, espumado, telgopor) y equivalencias de onzas (6 oz ≈ 180 cc).</p>
+  </section>
+</main>
+
+<div class="barra" id="barra" hidden>
+  <div class="wrap">
+    <span class="n" id="barra-n"></span>
+    <div class="acciones">
+      <button class="btn-claro" type="button" id="barra-vaciar">Vaciar</button>
+      <button class="btn-lleno" type="button" id="barra-comparar">Comparar →</button>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="panel" hidden role="dialog" aria-modal="true" aria-labelledby="panel-t">
+  <div class="panel-caja">
+    <div class="panel-cab"><h2 id="panel-t">Cargar lista de precios</h2><button type="button" id="panel-cerrar" aria-label="Cerrar">×</button></div>
+    <div class="panel-cuerpo" id="panel-cuerpo"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>/*__LECTORES__*/</script>
+<script>
+const DATA = /*__DATOS__*/null;
+const IVA = DATA.iva;
+const L = window.Lectores;
+const COLORES = { Darnel: "var(--p-darnel)", Vassoi: "var(--p-vassoi)", Bolsatodo: "var(--p-bolsatodo)" };
+const EXTRA = ["var(--p-a)", "var(--p-b)", "var(--p-c)", "var(--p-d)"];
+function color(p) {
+  if (COLORES[p]) return COLORES[p];
+  let h = 0; for (const c of p) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return EXTRA[h % EXTRA.length];
+}
+
+// ---------- Búsqueda ----------
+
+// Grupos de palabras equivalentes: todas se buscan como la primera.
+const SINONIMOS = [
+  ["termico", "term", "espumado", "espum", "telgopor", "expandido", "exp"],
+  ["bandeja", "band", "bdja"],
+  ["aluminio", "alum", "alu"],
+  ["plastico", "plas", "plast"],
+  ["transparente", "transp", "trans", "cristal", "cris"],
+  ["blanco", "blanca", "bco", "bca", "bl", "blanc"],
+  ["negro", "negra", "ng", "neg"],
+  ["contenedor", "cont"],
+  ["cuchara", "cuch", "cucha"],
+  ["servilleta", "serv"],
+  ["caja", "cj", "cja"],
+  ["paquete", "paq", "pq"],
+  ["biodegradable", "bio"],
+];
+const CANON = new Map();
+for (const g of SINONIMOS) for (const w of g) CANON.set(w, g[0]);
+
+const quitarTildes = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+function tokens(s) {
+  return quitarTildes(String(s).toLowerCase())
+    .replace(/(\d)([a-z])/g, "$1 $2").replace(/([a-z])(\d)/g, "$1 $2")
+    .split(/[^a-z0-9]+/).filter(Boolean)
+    .map(t => (t.length > 4 && t.endsWith("s") && !/\d/.test(t) ? t.replace(/(es|s)$/, t.endsWith("ces") ? "z" : "") : t))
+    .map(t => CANON.get(t) || t);
+}
+// 1 oz ≈ 30 cc (convención en descartables)
+function extras(s) {
+  const out = [];
+  for (const m of String(s).matchAll(/(\d+(?:[.,]\d+)?)\s*oz/gi)) out.push(String(Math.round(parseFloat(m[1].replace(",", ".")) * 30)));
+  if (/vaso|pote|bowl|cont|frasco|souffle/i.test(s)) {
+    for (const m of String(s).matchAll(/\b(\d{2,4})\s*(?:cc|ml)?\b/gi)) {
+      const n = +m[1];
+      if (n % 30 === 0 && n <= 1200 && !/oz/i.test(s)) out.push(String(n / 30), "oz");
+    }
+  }
+  return out;
+}
+function coincide(q, t) {
+  if (t === q) return true;
+  if (/^\d+$/.test(q) || /^\d+$/.test(t)) return false;
+  if (t.startsWith(q)) return true;
+  return t.length >= 3 && q.startsWith(t);
+}
+
+// ---------- Datos ----------
+// configs: reglas de cada proveedor (IVA, descuento, columnas). crudos: productos tal como salen del lector.
+// Lo que viene dentro de la página se pisa con lo guardado en la base (listas subidas, correcciones).
+
+const configs = new Map(DATA.proveedores.map(p => [p.nombre, { ...p }]));
+const crudos = new Map();
+for (const r of DATA.items) {
+  if (!crudos.has(r[0])) crudos.set(r[0], []);
+  crudos.get(r[0]).push(r);
+}
+const fechaBase = new Map(DATA.proveedores.map(p => [p.nombre, p.fecha]));
+const listasDb = new Map();      // nombre -> documento de la lista subida
+const cargadas = new Map();      // nombre -> assetId ya leído
+const correcciones = new Map();  // clave -> unidades
+let revisados = {};              // clave -> precio de lista que se marcó "está bien"
+
+const cacheTokens = new WeakMap();
+let ITEMS = [];
+let PROVS = [];
+const activos = new Set(DATA.proveedores.map(p => p.nombre));
+const conocidos = new Set(activos);  // un proveedor nuevo aparece activo; si lo ocultaste, queda oculto
+
+function neto(lista, cfg) {
+  let n = lista * (1 - (cfg.descuento || 0));
+  if (cfg.con_iva) n /= 1 + IVA;
+  return n;
+}
+
+function construir() {
+  PROVS = [...configs.values()].filter(c => crudos.has(c.nombre))
+    .map(c => ({ ...c, cantidad: 0, con_unitario: 0, raros: 0, subida: listasDb.get(c.nombre) && cargadas.get(c.nombre) ? listasDb.get(c.nombre) : null }));
+  ITEMS = [];
+  for (const p of PROVS) {
+    if (!conocidos.has(p.nombre)) { conocidos.add(p.nombre); activos.add(p.nombre); }
+    for (const r of crudos.get(p.nombre)) {
+      const [prov, codigo, desc, detalle, cat, pres, compra, lista, unidadesLista, antes] = r;
+      let tk = cacheTokens.get(r);
+      if (!tk) {
+        const propios = new Set([...tokens(desc), ...tokens(codigo), ...extras(desc), ...tokens(prov)]);
+        const todos = new Set([...propios, ...tokens(cat), ...tokens(detalle)]);
+        tk = { propios: [...propios], toks: [...todos] };
+        cacheTokens.set(r, tk);
+      }
+      const kc = L.clave(r);
+      const corregido = correcciones.has(kc);
+      const unidades = corregido ? correcciones.get(kc) : unidadesLista;
+      const n = neto(lista, p);
+      const unit = unidades ? n / unidades : null;
+      const variacion = antes ? lista / antes - 1 : null;
+      const raro = variacion != null && Math.abs(variacion) >= L.UMBRAL_RARO && revisados[kc] !== lista;
+      p.cantidad++;
+      if (unit != null) p.con_unitario++;
+      if (raro) p.raros++;
+      ITEMS.push({ k: [prov, codigo, compra, desc].join("|"), kc, prov, codigo, desc, detalle, cat, pres, compra, lista,
+        neto: n, unit, unidades, unidadesLista, corregido, antes, variacion, raro, ...tk });
+    }
+  }
+}
+
+// ---------- Selección para comparar (se guarda en este navegador) ----------
+
+const CLAVE_SEL = "comparador.seleccion";
+const seleccion = new Set((() => {
+  try { return JSON.parse(localStorage.getItem(CLAVE_SEL) || "[]"); } catch { return []; }
+})());
+function guardarSeleccion() {
+  try { localStorage.setItem(CLAVE_SEL, JSON.stringify([...seleccion])); } catch {}
+}
+let vista = "buscar";
+let editando = null;  // clave del producto cuya cantidad se está corrigiendo
+
+function buscar(texto) {
+  const qs = [...new Set(tokens(texto))];
+  if (!qs.length) return { qs, res: [] };
+  const res = ITEMS.filter(it => activos.has(it.prov) && qs.every(q => it.toks.some(t => coincide(q, t))));
+  // "directo": todas las palabras están en el nombre del producto; si no, coincide solo por la categoría.
+  for (const it of res) it.directo = qs.every(q => it.propios.some(t => coincide(q, t)));
+  return { qs, res };
+}
+
+// ---------- Formato ----------
+
+const fmt = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt0 = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const fmtN = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 });
+const fmtP = v => `${v > 0 ? "+" : "−"}${fmtN.format(Math.abs(Math.round(v * 1000) / 10))}%`;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const conIva = v => v * (1 + IVA);
+const hoyISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+
+function resaltar(texto, qs) {
+  if (!qs.length) return esc(texto);
+  return String(texto).split(/(\s+)/).map(w => {
+    if (/^\s+$/.test(w)) return w;
+    const ts = tokens(w);
+    const hit = ts.length && ts.some(t => qs.some(q => coincide(q, t)));
+    return hit ? `<mark>${esc(w)}</mark>` : esc(w);
+  }).join("");
+}
+
+function dias(fecha) {
+  if (!fecha) return null;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  return Math.round((hoy - new Date(fecha + "T00:00:00")) / 86400000);
+}
+function edadTexto(d) {
+  if (d === null) return "sin fecha";
+  if (d <= 0) return "hoy";
+  if (d === 1) return "ayer";
+  return `hace ${d} días`;
+}
+const edadClase = d => (d === null || d > 35 ? "viejo" : d > 15 ? "med" : "ok");
+const fechaCorta = f => (f ? f.slice(0, 10).split("-").reverse().join("/") : "—");
+
+function presentacion(it) {
+  const partes = [];
+  if (it.pres) partes.push(it.pres);
+  if (it.compra) partes.push(it.compra.charAt(0).toUpperCase() + it.compra.slice(1));
+  if ((!it.pres || it.corregido) && it.unidades && it.unidades > 1) partes.push(`${fmtN.format(it.unidades)} u.`);
+  return partes.join(" · ");
+}
+
+// ---------- Tabla ----------
+
+const CABECERA = `<div class="fila cab"><div>Proveedor</div><div>Producto</div><div>Presentación</div><div class="r">Por unidad<br>sin IVA</div><div class="r">Por unidad<br>con IVA</div></div>`;
+
+function ordenar(res, conDirecto) {
+  const orden = document.getElementById("orden").value;
+  const porUnit = (a, b) => (a.unit == null) - (b.unit == null) || (a.unit ?? 0) - (b.unit ?? 0);
+  const porDirecto = (a, b) => (conDirecto ? b.directo - a.directo : 0);
+  if (orden === "unit") res.sort((a, b) => porDirecto(a, b) || porUnit(a, b));
+  else if (orden === "pres") res.sort((a, b) => porDirecto(a, b) || a.neto - b.neto);
+  else res.sort((a, b) => porDirecto(a, b) || a.prov.localeCompare(b.prov) || porUnit(a, b));
+  return res;
+}
+
+function celdaPresentacion(it) {
+  if (editando === it.kc) {
+    return `<form class="corr" data-kc="${esc(it.kc)}">
+      <label for="corr-unidades">¿Cuántas unidades trae esta presentación?
+        <input id="corr-unidades" name="unidades" type="number" min="0.01" step="any" required value="${it.unidades ?? ""}" inputmode="decimal"></label>
+      <div class="l">Precio de la presentación: ${fmt0.format(it.neto)} s/IVA</div>
+      <div class="botones">
+        <button class="btn-lleno" type="submit">Guardar</button>
+        <button class="btn-sec" type="button" data-cancelar>Cancelar</button>
+        ${it.corregido ? `<button class="btn-sec peligro" type="button" data-quitar="${esc(it.kc)}">Volver a la de la lista</button>` : ""}
+      </div></form>`;
+  }
+  const cfg = configs.get(it.prov) || {};
+  const ajustes = [cfg.descuento ? `−${Math.round(cfg.descuento * 1000) / 10}%` : "", cfg.con_iva ? "con IVA" : ""].filter(Boolean).join(", ");
+  const lista = ajustes ? `<div class="l">Lista ${fmt0.format(it.lista)} (${ajustes})</div>` : "";
+  const variacion = it.variacion != null && Math.abs(it.variacion) >= 0.005
+    ? `<div class="var${it.raro ? " raro" : ""}">${it.variacion > 0 ? "↑" : "↓"} ${fmtP(it.variacion)} vs lista anterior (${fmt0.format(it.antes)})</div>` : "";
+  const acciones = [];
+  if (puedeEditar) acciones.push(`<button class="mini" type="button" data-corregir="${esc(it.kc)}">Corregir cantidad</button>`);
+  if (puedeEditar && it.raro) acciones.push(`<button class="mini" type="button" data-ok="${esc(it.kc)}" data-lista="${it.lista}">Está bien</button>`);
+  return `<div><span class="p">${fmt0.format(it.neto)}</span> <span class="l">s/IVA</span></div><div class="l">${esc(presentacion(it))}</div>${lista}${variacion}
+    ${acciones.length ? `<div class="acciones-fila">${acciones.join("")}</div>` : ""}`;
+}
+
+// ref: el producto más barato por unidad de la comparación (para mostrar la diferencia).
+function filaHTML(it, qs, esMejor, ref) {
+  const desc = [it.cat, it.detalle].filter(Boolean).join(" · ");
+  const unitSin = it.unit != null ? fmt.format(it.unit) : `<span class="na">—</span>`;
+  const unitCon = it.unit != null ? fmt.format(conIva(it.unit)) : `<span class="na">—</span>`;
+  let dif = "";
+  if (ref && it.unit != null) {
+    const d = it.unit - ref.unit;
+    dif = d <= 0.005
+      ? `<div class="dif cero">Más barato</div>`
+      : `<div class="dif mas">+${fmt.format(d)} (${fmtP(d / ref.unit)})</div>`;
+  }
+  const pills = [];
+  if (esMejor) pills.push(`<span class="pill mejor">Más barato por unidad</span>`);
+  if (it.raro) pills.push(`<span class="pill raro">Precio raro</span>`);
+  if (it.corregido) pills.push(`<span class="pill corregido">Cantidad corregida a mano</span>`);
+  const marcado = seleccion.has(it.k);
+  return `<div class="fila${esMejor ? " es-mejor" : ""}${marcado ? " marcada" : ""}" style="--c:${color(it.prov)}">
+      <div class="c-prov"><label class="sel"><input type="checkbox" data-k="${esc(it.k)}"${marcado ? " checked" : ""} aria-label="Seleccionar para comparar: ${esc(it.desc)}"><span class="prov">${esc(it.prov)}</span></label></div>
+      <div class="c-prod"><div class="desc">${resaltar(it.desc, qs)}</div>
+        <div class="meta"><span class="cod">Cód. ${esc(it.codigo || "—")}</span>${desc ? " · " + esc(desc) : ""}</div>
+        ${pills.length ? `<div class="pills">${pills.join("")}</div>` : ""}</div>
+      <div class="c-pres pres">${celdaPresentacion(it)}</div>
+      <div class="c-sin r"><span class="lbl">c/u s/IVA</span><div><span class="unit">${unitSin}</span>${dif}</div></div>
+      <div class="c-con r"><span class="lbl">c/u c/IVA</span><span class="unit con">${unitCon}</span></div>
+    </div>`;
+}
+
+function renderBarra() {
+  const n = seleccion.size;
+  const barra = document.getElementById("barra");
+  barra.hidden = n === 0 || vista !== "buscar";
+  document.body.classList.toggle("con-barra", !barra.hidden);
+  document.getElementById("barra-n").textContent = `${n} seleccionado${n === 1 ? "" : "s"}`;
+}
+
+function renderComparar() {
+  const cont = document.getElementById("resultados");
+  const elegidos = ordenar(ITEMS.filter(it => seleccion.has(it.k)), false);
+  const ref = elegidos.filter(it => it.unit != null).reduce((m, r) => (!m || r.unit < m.unit ? r : m), null);
+  const provs = new Set(elegidos.map(it => it.prov));
+  document.getElementById("cuenta").textContent = elegidos.length
+    ? `${elegidos.length} producto${elegidos.length === 1 ? "" : "s"} de ${provs.size} proveedor${provs.size === 1 ? "" : "es"}`
+    : "No hay productos seleccionados";
+  document.getElementById("sinon").textContent = "";
+  document.getElementById("mas").hidden = true;
+  cont.innerHTML = elegidos.length
+    ? `<div class="tabla">${CABECERA}${elegidos.map(it => filaHTML(it, [], it === ref, ref)).join("")}</div>`
+    : `<div class="tabla"><div class="vacio">Volvé a buscar y marcá la casilla de los productos que querés comparar.</div></div>`;
+}
+
+function renderRaros() {
+  const cont = document.getElementById("resultados");
+  const raros = ITEMS.filter(it => it.raro && activos.has(it.prov)).sort((a, b) => Math.abs(b.variacion) - Math.abs(a.variacion));
+  document.getElementById("cuenta").textContent = raros.length ? `${raros.length} precio${raros.length === 1 ? "" : "s"} para revisar` : "No hay precios raros";
+  document.getElementById("sinon").textContent = "";
+  document.getElementById("mas").hidden = true;
+  cont.innerHTML = raros.length
+    ? `<div class="tabla">${CABECERA}${raros.slice(0, LIMITE).map(it => filaHTML(it, [], false, null)).join("")}</div>`
+    : `<div class="tabla"><div class="vacio">Todo en orden: ningún precio cambió más de 25% respecto de la lista anterior.</div></div>`;
+}
+
+let LIMITE = 120;
+function render() {
+  const cab = document.getElementById("vista-cab");
+  cab.hidden = vista === "buscar";
+  document.getElementById("btn-vaciar").hidden = vista !== "comparar";
+  if (vista === "comparar") {
+    document.getElementById("vista-titulo").textContent = "Comparación";
+    document.getElementById("vista-explica").textContent = "Destildá un producto para sacarlo de la comparación.";
+  } else if (vista === "raros") {
+    document.getElementById("vista-titulo").textContent = "Precios raros";
+    document.getElementById("vista-explica").textContent = "Productos cuyo precio de lista cambió 25% o más respecto de la lista anterior. Puede ser un aumento real, un error del proveedor o un error al leer el archivo. Si está bien, tocá \"Está bien\" y sale de esta lista; si la cantidad por bulto se leyó mal, usá \"Corregir cantidad\".";
+  }
+  renderBarra();
+  renderRarosBoton();
+  if (vista === "comparar") return renderComparar();
+  if (vista === "raros") return renderRaros();
+  const texto = document.getElementById("q").value;
+  const { qs, res } = buscar(texto);
+  ordenar(res, true);
+
+  const cont = document.getElementById("resultados");
+  const cuenta = document.getElementById("cuenta");
+  const sinon = document.getElementById("sinon");
+  const mas = document.getElementById("mas");
+
+  // Qué sinónimos se están usando, para que se vea por qué aparece cada resultado.
+  const usados = qs.filter(q => SINONIMOS.some(g => g[0] === q)).map(q => SINONIMOS.find(g => g[0] === q).slice(0, 4).join(", "));
+  sinon.innerHTML = usados.length ? `También busca: <b>${esc(usados.join(" · "))}</b>` : "";
+
+  if (!qs.length) {
+    cuenta.textContent = `${fmtN.format(ITEMS.length)} productos de ${PROVS.length} proveedores`;
+    cont.innerHTML = `<div class="tabla"><div class="vacio">Escribí lo que querés comprar y vas a ver el precio de cada proveedor.<div class="sugerencias">${
+      ["vaso termico 180", "pote souffle 2 oz", "bandeja aluminio", "tenedor", "film pvc", "vaso polipapel"].map(s => `<button class="sug" type="button" data-q="${s}">${s}</button>`).join("")
+    }</div></div></div>`;
+    mas.hidden = true;
+    return;
+  }
+
+  const provsEnRes = new Set(res.map(r => r.prov));
+  const mejor = res.filter(r => r.unit != null && r.directo).reduce((m, r) => (!m || r.unit < m.unit ? r : m), null);
+  const primerRelacionado = res.find(r => !r.directo);
+  cuenta.textContent = res.length
+    ? `${fmtN.format(res.length)} resultado${res.length === 1 ? "" : "s"} en ${provsEnRes.size} proveedor${provsEnRes.size === 1 ? "" : "es"}`
+    : "Sin resultados";
+
+  if (!res.length) {
+    cont.innerHTML = `<div class="tabla"><div class="vacio">No encontré "${esc(texto)}". Probá con menos palabras o una abreviatura (por ejemplo "band" en vez de "bandeja").</div></div>`;
+    mas.hidden = true;
+    return;
+  }
+
+  const filas = res.slice(0, LIMITE).map(it => {
+    const separador = it === primerRelacionado
+      ? `<div class="separador">Relacionados por categoría${it === res[0] ? "" : " (el nombre no tiene todas las palabras)"}</div>` : "";
+    return separador + filaHTML(it, qs, mejor && it === mejor, null);
+  }).join("");
+  cont.innerHTML = `<div class="tabla">${CABECERA}${filas}</div>`;
+  mas.hidden = res.length <= LIMITE;
+}
+
+function renderRarosBoton() {
+  const n = ITEMS.filter(it => it.raro && activos.has(it.prov)).length;
+  const b = document.getElementById("btn-raros");
+  b.hidden = n === 0 || vista === "raros";
+  b.textContent = `⚠ ${n} precio${n === 1 ? "" : "s"} raro${n === 1 ? "" : "s"}`;
+}
+
+function renderProvs() {
+  document.getElementById("provs").innerHTML = PROVS.map(p => {
+    const d = dias(p.fecha);
+    return `<button type="button" class="chip" style="--c:${color(p.nombre)}" aria-pressed="${activos.has(p.nombre)}" data-p="${esc(p.nombre)}">
+      <span class="dot"></span>${esc(p.nombre)} <span class="edad">${edadTexto(d)}</span></button>`;
+  }).join("");
+  document.getElementById("listas").innerHTML = PROVS.map(p => {
+    const d = dias(p.fecha);
+    return `<div class="lista" style="--c:${color(p.nombre)}">
+      <div class="n">${esc(p.nombre)}</div>
+      <dl>
+        <dt>Fecha de la lista</dt><dd>${fechaCorta(p.fecha)} <span class="estado ${edadClase(d)}">${edadTexto(d)}</span></dd>
+        <dt>Viene</dt><dd>${p.con_iva ? "con IVA" : "sin IVA"}</dd>
+        <dt>Descuento</dt><dd>${p.descuento ? Math.round(p.descuento * 100) + "%" : "no"}</dd>
+        <dt>Productos</dt><dd>${fmtN.format(p.cantidad)}</dd>
+        <dt>Con precio por unidad</dt><dd>${fmtN.format(p.con_unitario)}</dd>
+        ${p.raros ? `<dt>Precios raros</dt><dd>${fmtN.format(p.raros)}</dd>` : ""}
+        ${p.subida ? `<dt>Subida</dt><dd>${fechaCorta(p.subida.subido)}${p.subida.archivo ? ` · ${esc(p.subida.archivo)}` : ""}</dd>` : ""}
+      </dl>
+      ${puedeSubir ? `<button class="btn-sec" type="button" data-cargar="${esc(p.nombre)}">Cargar lista nueva</button>` : ""}
+    </div>`;
+  }).join("");
+  const ultima = PROVS.map(p => p.fecha).filter(Boolean).sort().pop();
+  document.getElementById("sub").textContent = ultima ? `Última lista: ${fechaCorta(ultima)}` : "";
+}
+
+function todo() { construir(); renderProvs(); render(); }
+
+let toastT;
+function aviso(texto) {
+  const t = document.getElementById("toast");
+  t.textContent = texto; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 4500);
+}
+
+// ---------- Base de datos (correcciones, listas subidas, revisados) ----------
+
+let db = null, assets = null, puedeEditar = false, puedeSubir = false;
+
+// Id de documento a partir de un texto cualquiera.
+function idDe(texto, prefijo) {
+  let h1 = 0x811c9dc5, h2 = 0;
+  for (let i = 0; i < texto.length; i++) {
+    h1 = Math.imul(h1 ^ texto.charCodeAt(i), 16777619) >>> 0;
+    h2 = (Math.imul(h2, 31) + texto.charCodeAt(i)) >>> 0;
+  }
+  return prefijo + h1.toString(16).padStart(8, "0") + h2.toString(16).padStart(8, "0");
+}
+const idProveedor = nombre => idDe(L.norm(nombre), "p");
+
+async function escribir(promesa, mensajeOk) {
+  try {
+    await promesa;
+    if (mensajeOk) aviso(mensajeOk);
+    return true;
+  } catch (e) {
+    if (e && e.code === "invalid_argument") { puedeEditar = false; puedeSubir = false; aviso("No tenés permiso para guardar cambios en esta página."); todo(); }
+    else if (e && e.code === "quota_exceeded") aviso("Se llenó el espacio de la base de datos de la página.");
+    else aviso("No se pudo guardar. Probá de nuevo en un rato.");
+    return false;
+  }
+}
+
+async function leerListaGuardada(nombre, doc) {
+  try {
+    const r = await fetch("/_blob/" + doc.assetId);
+    if (!r.ok) throw new Error(r.status);
+    const { items } = await r.json();
+    crudos.set(nombre, items);
+    cargadas.set(nombre, doc.assetId);
+    const cfg = configs.get(nombre);
+    if (cfg) cfg.fecha = doc.fecha;
+    todo();
+  } catch {
+    aviso(`No pude leer la lista guardada de ${nombre}.`);
+  }
+}
+
+function usarListasGuardadas() {
+  for (const [nombre, doc] of listasDb) {
+    if (!doc.assetId || cargadas.get(nombre) === doc.assetId) continue;
+    const base = fechaBase.get(nombre);
+    if (base && doc.fecha < base) continue;  // la lista que trae la página es más nueva
+    leerListaGuardada(nombre, doc);
+  }
+}
+
+async function iniciarBase() {
+  if (!window.claude || !window.claude.use) return;
+  db = await window.claude.use("db");
+  if (!db) return;
+  const user = await window.claude.use("user");
+  const puede = user ? await user.can("data.write") : null;
+  puedeEditar = puede !== false;
+  assets = puedeEditar ? await window.claude.use("assets") : null;
+  puedeSubir = !!assets;
+  document.getElementById("btn-cargar").hidden = !puedeSubir;
+
+  db.collection("proveedores").onSnapshot(snap => {
+    for (const d of snap.docs) {
+      const c = d.data();
+      if (c && c.nombre) configs.set(c.nombre, { ...(configs.get(c.nombre) || {}), ...c, fecha: configs.get(c.nombre)?.fecha ?? c.fecha });
+    }
+    todo();
+  }, () => {});
+  db.collection("listas").onSnapshot(snap => {
+    for (const d of snap.docs) { const l = d.data(); if (l && l.nombre) listasDb.set(l.nombre, l); }
+    usarListasGuardadas();
+  }, () => {});
+  db.collection("correcciones").onSnapshot(snap => {
+    correcciones.clear();
+    for (const d of snap.docs) { const c = d.data(); if (c && c.clave && c.unidades > 0) correcciones.set(c.clave, c.unidades); }
+    todo();
+  }, () => {});
+  db.doc("estado/revisados").onSnapshot(snap => {
+    revisados = (snap.exists && snap.data().items) || {};
+    todo();
+  }, () => {});
+  todo();
+}
+
+async function guardarCorreccion(kc, unidades) {
+  const it = ITEMS.find(i => i.kc === kc);
+  correcciones.set(kc, unidades);
+  editando = null;
+  todo();
+  await escribir(db.collection("correcciones").doc(idDe(kc, "c")).set({ clave: kc, unidades, prov: it?.prov ?? "", desc: it?.desc ?? "", cuando: new Date().toISOString() }),
+    "Cantidad corregida. Se va a usar también en las próximas listas.");
+}
+async function quitarCorreccion(kc) {
+  correcciones.delete(kc);
+  editando = null;
+  todo();
+  await escribir(db.collection("correcciones").doc(idDe(kc, "c")).delete(), "Se volvió a usar la cantidad de la lista.");
+}
+async function marcarRevisado(kc, lista) {
+  revisados = { ...revisados, [kc]: lista };
+  todo();
+  await escribir(db.doc("estado/revisados").set({ items: revisados }));
+}
+
+// ---------- Cargar una lista nueva ----------
+
+function cargarScript(src) {
+  return new Promise((ok, mal) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = ok; s.onerror = () => mal(new Error("sin conexión"));
+    document.head.appendChild(s);
+  });
+}
+async function libXLSX() {
+  if (!window.XLSX) await cargarScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
+  return window.XLSX;
+}
+async function libPDF() {
+  if (!window.pdfjsLib) {
+    await cargarScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+    // El "worker" se carga en la misma página: pdf.js lo detecta y lo usa sin abrir otro hilo.
+    await cargarScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js");
+  }
+  return window.pdfjsLib;
+}
+
+const CAMPOS = [
+  { id: "desc", nombre: "Descripción del producto", req: true, pista: /^(?!COD)(.*DESCRIP|.*PRODUCTO|ARTICULO$|DETALLE$)/ },
+  { id: "precio", nombre: "Precio", req: true, pista: /PRECIO|IMPORTE|VALOR|\$/ },
+  { id: "codigo", nombre: "Código", pista: /COD/ },
+  { id: "cant", nombre: "Cantidad por bulto/caja", pista: /^C\/U$|CANT|X CAJA|X BULTO|UNID.*(CAJA|BULTO)/ },
+  { id: "um", nombre: "Unidad de medida (caja, paq…)", pista: /^U\/?M$|UNIDAD DE MEDIDA|^UNIDAD$/ },
+  { id: "compra", nombre: "Escala (\"por 3 cajas\")", pista: /ADICIONAL|ESCALA|MINIMO/ },
+  { id: "detalle", nombre: "Comentario / medidas", pista: /COMENT|OBSERV|MEDIDA/ },
+];
+
+let carga = null;  // estado del panel de carga
+
+function abrirPanel(nombre) {
+  carga = { prov: null, cfg: null, archivo: null, hojas: null, lineas: null, hoja: 0, filaTitulos: null, tipo: null,
+    resultado: null, comparacion: null, fecha: hoyISO(), fechaTocada: false, error: null, leyendo: false, guardando: false, mapear: false };
+  document.getElementById("panel").hidden = false;
+  document.body.style.overflow = "hidden";
+  elegirProveedor(nombre && configs.has(nombre) ? nombre : (PROVS[0]?.nombre ?? "__nuevo"));
+  document.getElementById("cp-archivo")?.focus();
+}
+function cerrarPanel() {
+  carga = null;
+  document.getElementById("panel").hidden = true;
+  document.body.style.overflow = "";
+}
+
+function elegirProveedor(nombre) {
+  carga.prov = nombre;
+  carga.cfg = nombre === "__nuevo"
+    ? { nombre: "", con_iva: false, descuento: 0, formato: "planilla", columnas: null }
+    : JSON.parse(JSON.stringify(configs.get(nombre)));
+  carga.mapear = false;
+  if (carga.archivo) procesarArchivo();
+  else renderPanel();
+}
+
+// Sugiere qué columna es cada cosa a partir de los títulos.
+function sugerirColumnas(fila) {
+  const cols = {};
+  const usados = new Set();
+  for (const c of CAMPOS) {
+    const i = fila.findIndex((v, j) => !usados.has(j) && v != null && c.pista.test(L.norm(v)));
+    if (i >= 0) { cols[c.id] = String(fila[i]).trim(); usados.add(i); }
+  }
+  return cols;
+}
+
+async function leerArchivo(file) {
+  carga.archivo = file;
+  carga.error = null; carga.leyendo = true; carga.hojas = null; carga.lineas = null; carga.resultado = null; carga.tipo = null;
+  carga.mapear = false;
+  renderPanel();
+  try {
+    if (/\.pdf$/i.test(file.name)) {
+      const pdfjs = await libPDF();
+      const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+      carga.tipo = "pdf";
+      carga.lineas = await L.lineasPDF(doc);
+    } else {
+      const XLSX = await libXLSX();
+      const wb = /\.csv$/i.test(file.name)
+        ? XLSX.read(await file.text(), { type: "string", cellDates: true })
+        : XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: "array", cellDates: true });
+      carga.tipo = "planilla";
+      carga.hojas = L.hojasVisibles(wb, XLSX);
+      if (!carga.hojas.length) throw new Error("vacía");
+    }
+  } catch (e) {
+    carga.error = e.message === "sin conexión"
+      ? "No se pudo cargar el lector de archivos. Revisá la conexión a internet y probá de nuevo."
+      : "No pude abrir el archivo. ¿Es un Excel (.xlsx, .xls), un CSV o un PDF?";
+  }
+  carga.leyendo = false;
+  procesarArchivo();
+}
+
+function procesarArchivo() {
+  const c = carga;
+  c.resultado = null; c.comparacion = null;
+  if (!c.archivo || c.error && !c.hojas && !c.lineas) return renderPanel();
+  c.cfg.nombre = c.prov === "__nuevo" ? (c.cfg.nombre || "").trim() : c.prov;
+  if (c.tipo === "pdf") {
+    if (c.cfg.formato !== "vassoi") {
+      c.error = "Por ahora los PDF solo los puedo leer con el formato de la lista de Vassoi. Para este proveedor pedí la lista en Excel, o pasale el PDF a Claude para que lo cargue.";
+      return renderPanel();
+    }
+    c.error = null;
+    c.resultado = L.leerVassoi(c.lineas, c.cfg);
+  } else {
+    c.error = null;
+    // Primero se prueba con las columnas guardadas del proveedor; si no aparecen, se piden a mano.
+    if (!c.mapear) {
+      if (c.cfg.columnas) c.resultado = L.leerPlanilla(c.hojas, c.cfg);
+      if (!c.resultado || !c.resultado.titulosEncontrados) { c.mapear = true; c.cfg.columnas = null; c.resultado = null; }
+    }
+    if (c.mapear) {
+      const filas = c.hojas[c.hoja].filas;
+      if (c.filaTitulos == null || c.filaTitulos >= filas.length) c.filaTitulos = L.adivinarTitulos(filas);
+      if (!c.cfg.columnas) {
+        c.cfg.columnas = sugerirColumnas(filas[c.filaTitulos] || []);
+        if (!c.cfg.columnas.cant && !c.cfg.unidadesFijas) c.cfg.cantEnDesc = true;
+      }
+      c.resultado = c.cfg.columnas.desc && c.cfg.columnas.precio ? L.leerPlanilla(c.hojas, c.cfg) : null;
+    }
+  }
+  if (c.resultado) {
+    if (c.resultado.fecha && !c.fechaTocada) c.fecha = c.resultado.fecha;
+    for (const it of c.resultado.items) it[0] = c.cfg.nombre || "Nuevo";
+    const anteriores = c.prov !== "__nuevo" && crudos.has(c.prov) ? crudos.get(c.prov) : [];
+    c.comparacion = L.compararConAnterior(c.resultado.items, anteriores);
+  }
+  renderPanel();
+}
+
+function opcionesColumnas(fila, elegido) {
+  const ops = [`<option value="">(no tiene)</option>`];
+  const vistos = new Set();
+  for (const v of fila) {
+    if (v == null || !String(v).trim()) continue;
+    const t = String(v).trim();
+    if (vistos.has(t)) continue;
+    vistos.add(t);
+    ops.push(`<option value="${esc(t)}"${elegido && L.norm(elegido) === L.norm(t) ? " selected" : ""}>${esc(t.length > 40 ? t.slice(0, 40) + "…" : t)}</option>`);
+  }
+  return ops.join("");
+}
+
+function renderPanel() {
+  const c = carga;
+  if (!c) return;
+  const cfg = c.cfg;
+  const nuevo = c.prov === "__nuevo";
+  const partes = [];
+
+  partes.push(`<section class="paso"><h3>1. Proveedor</h3><div class="campos">
+    <label class="campo" for="cp-prov">Proveedor
+      <select id="cp-prov">${[...configs.keys()].map(n => `<option${n === c.prov ? " selected" : ""}>${esc(n)}</option>`).join("")}
+        <option value="__nuevo"${nuevo ? " selected" : ""}>+ Proveedor nuevo</option></select></label>
+    ${nuevo ? `<label class="campo" for="cp-nombre">Nombre del proveedor<input id="cp-nombre" type="text" value="${esc(cfg.nombre)}" placeholder="Ej.: Luis" autocomplete="off"></label>` : ""}
+    <label class="campo" for="cp-iva">La lista viene
+      <select id="cp-iva"><option value="no"${cfg.con_iva ? "" : " selected"}>sin IVA</option><option value="si"${cfg.con_iva ? " selected" : ""}>con IVA</option></select></label>
+    <label class="campo" for="cp-desc">Descuento que te hace (%)
+      <input id="cp-desc" type="number" min="0" max="99" step="0.5" value="${Math.round((cfg.descuento || 0) * 1000) / 10}" inputmode="decimal"></label>
+  </div>
+  ${cfg.ayuda ? `<div class="aviso info">${esc(cfg.ayuda)}${cfg.sheet ? ` <a href="https://docs.google.com/spreadsheets/d/${esc(cfg.sheet)}" target="_blank" rel="noopener">Abrir su Google Sheets</a>` : ""}</div>` : ""}
+  </section>`);
+
+  partes.push(`<section class="paso"><h3>2. Archivo de la lista</h3>
+    <label class="campo" for="cp-archivo">Excel (.xlsx, .xls), CSV o PDF
+      <input id="cp-archivo" type="file" accept=".xlsx,.xls,.csv,.pdf"></label>
+    ${c.archivo ? `<div class="l">Archivo: <b>${esc(c.archivo.name)}</b></div>` : ""}
+    ${c.leyendo ? `<div class="aviso info">Leyendo el archivo…</div>` : ""}
+    ${c.error ? `<div class="aviso error">${esc(c.error)}</div>` : ""}
+  </section>`);
+
+  if (c.tipo === "planilla" && c.hojas && c.mapear) {
+    const filas = c.hojas[c.hoja].filas;
+    const titulos = filas[c.filaTitulos] || [];
+    const cols = cfg.columnas || {};
+    const modo = cfg.unidadesFijas ? "fijas" : cfg.cantEnDesc ? "desc" : "nada";
+    partes.push(`<section class="paso"><h3>3. ¿Qué es cada columna?</h3>
+      <div class="aviso info">Es la primera vez con este formato de archivo. Indicá qué columna es cada cosa; queda guardado para las próximas listas de este proveedor.</div>
+      <div class="campos">
+        ${c.hojas.length > 1 ? `<label class="campo" for="cp-hoja">Hoja de ejemplo<select id="cp-hoja">${c.hojas.map((h, i) => `<option value="${i}"${i === c.hoja ? " selected" : ""}>${esc(h.nombre)}</option>`).join("")}</select></label>` : ""}
+        <label class="campo" for="cp-fila">Fila de los títulos<input id="cp-fila" type="number" min="1" max="${filas.length}" value="${c.filaTitulos + 1}"><span class="ayuda">${esc(titulos.filter(v => v != null).slice(0, 5).join(" | ").slice(0, 80))}</span></label>
+      </div>
+      <div class="campos">${CAMPOS.map(f => `<label class="campo" for="cp-col-${f.id}">${esc(f.nombre)}${f.req ? " *" : ""}
+        <select id="cp-col-${f.id}" data-col="${f.id}">${opcionesColumnas(titulos, cols[f.id])}</select></label>`).join("")}</div>
+      ${cols.cant ? "" : `<div class="radios" role="radiogroup" aria-label="Si no hay cantidad por bulto">
+        <b style="font-size:0.84rem">Si la lista no trae cantidad por bulto:</b>
+        <label><input type="radio" name="cp-modo" value="desc"${modo === "desc" ? " checked" : ""}> Buscarla en la descripción (Cx1000, x100u, PQx50)</label>
+        <label><input type="radio" name="cp-modo" value="fijas"${modo === "fijas" ? " checked" : ""}> Todos los precios son por <input type="number" id="cp-fijas" min="1" step="1" value="${cfg.unidadesFijas || 100}"> unidades</label>
+        <label><input type="radio" name="cp-modo" value="nada"${modo === "nada" ? " checked" : ""}> No calcular precio por unidad</label>
+      </div>`}
+    </section>`);
+  }
+
+  const r = c.resultado, cmp = c.comparacion;
+  if (r) {
+    const conUnidad = r.items.filter(it => it[8]).length;
+    const muestra = r.items.filter((_, i) => i % Math.max(1, Math.floor(r.items.length / 6)) === 0).slice(0, 6);
+    const n = it => neto(it[7], { descuento: parseFloat(cfg.descuento) || 0, con_iva: cfg.con_iva });
+    partes.push(`<section class="paso"><h3>${c.mapear ? "4" : "3"}. Revisá lo que leí</h3>
+      <div class="campos"><label class="campo" for="cp-fecha">Fecha de la lista<input id="cp-fecha" type="date" value="${esc(c.fecha)}"></label></div>
+      ${c.tipo === "planilla" && !c.mapear ? `<div><button class="btn-sec" type="button" data-panel="mapear">Algo se leyó mal: elegir las columnas a mano</button></div>` : ""}
+      ${r.items.length ? "" : `<div class="aviso error">No encontré productos con precio. Revisá qué columna es cada cosa.</div>`}
+      <div class="stats">
+        <div class="stat"><b>${fmtN.format(r.items.length)}</b><span>productos</span></div>
+        <div class="stat"><b>${fmtN.format(conUnidad)}</b><span>con precio por unidad</span></div>
+        ${cmp && cmp.comparados ? `<div class="stat"><b>${cmp.mediana == null ? "—" : fmtP(cmp.mediana)}</b><span>cambio típico vs lista anterior</span></div>
+        <div class="stat${cmp.raros.length ? " alerta" : ""}"><b>${fmtN.format(cmp.raros.length)}</b><span>precios raros (±25%)</span></div>
+        <div class="stat"><b>${fmtN.format(cmp.nuevos)}</b><span>productos nuevos</span></div>
+        <div class="stat"><b>${fmtN.format(cmp.faltan)}</b><span>ya no están</span></div>` : ""}
+      </div>
+      ${r.items.length ? `<div class="scroll-x"><table class="mini-tabla"><thead><tr><th>Ejemplos</th><th>Presentación</th><th class="r">Precio s/IVA</th><th class="r">c/u s/IVA</th></tr></thead><tbody>
+        ${muestra.map(it => `<tr><td>${esc(it[2])}</td><td>${esc([it[5], it[6], !it[5] && it[8] > 1 ? it[8] + " u." : ""].filter(Boolean).join(" · "))}</td><td class="r">${fmt0.format(n(it))}</td><td class="r">${it[8] ? fmt.format(n(it) / it[8]) : "—"}</td></tr>`).join("")}
+      </tbody></table></div>` : ""}
+      ${cmp && cmp.raros.length ? `<div class="aviso alerta">Estos productos cambiaron mucho de precio. Fijate si tiene sentido antes de guardar; después los vas a ver en "Precios raros".</div>
+        <div class="scroll-x"><table class="mini-tabla"><thead><tr><th>Producto</th><th class="r">Antes</th><th class="r">Ahora</th><th class="r">Cambio</th></tr></thead><tbody>
+        ${cmp.raros.slice().sort((a, b) => Math.abs(b[7] / b[9] - 1) - Math.abs(a[7] / a[9] - 1)).slice(0, 40).map(it => `<tr><td>${esc(it[2])}</td><td class="r">${fmt0.format(it[9])}</td><td class="r">${fmt0.format(it[7])}</td><td class="r">${fmtP(it[7] / it[9] - 1)}</td></tr>`).join("")}
+        </tbody></table></div>${cmp.raros.length > 40 ? `<div class="l">…y ${cmp.raros.length - 40} más.</div>` : ""}` : ""}
+    </section>`);
+  }
+
+  const puedeGuardarLista = r && r.items.length && (!nuevo || cfg.nombre.trim());
+  partes.push(`<div class="panel-pie">
+    <button class="btn-sec" type="button" data-panel="cancelar">Cancelar</button>
+    ${!c.archivo && !nuevo ? `<button class="btn-sec" type="button" data-panel="condiciones"${c.guardando ? " disabled" : ""}>Guardar solo IVA y descuento</button>` : ""}
+    <button class="btn-lleno" type="button" data-panel="guardar"${puedeGuardarLista && !c.guardando ? "" : " disabled"}>${c.guardando ? "Guardando…" : "Guardar lista"}</button>
+  </div>`);
+
+  // Conservar foco y valores mientras se re-dibuja.
+  const activo = document.activeElement && document.activeElement.id;
+  document.getElementById("panel-cuerpo").innerHTML = partes.join("");
+  if (activo && activo !== "cp-archivo") document.getElementById(activo)?.focus();
+}
+
+function configParaGuardar(cfg) {
+  const out = { nombre: cfg.nombre.trim(), con_iva: !!cfg.con_iva, descuento: Math.min(0.99, Math.max(0, parseFloat(cfg.descuento) || 0)),
+    formato: cfg.formato || "planilla" };
+  if (cfg.columnas) out.columnas = cfg.columnas;
+  if (cfg.cantEnDesc) out.cantEnDesc = true;
+  if (cfg.unidadesFijas) out.unidadesFijas = cfg.unidadesFijas;
+  if (cfg.ayuda) out.ayuda = cfg.ayuda;
+  if (cfg.sheet) out.sheet = cfg.sheet;
+  return out;
+}
+
+async function guardarCondiciones() {
+  const cfg = configParaGuardar(carga.cfg);
+  carga.guardando = true; renderPanel();
+  configs.set(cfg.nombre, { ...configs.get(cfg.nombre), ...cfg });
+  const ok = await escribir(db.collection("proveedores").doc(idProveedor(cfg.nombre)).set(cfg), `Guardé las condiciones de ${cfg.nombre}.`);
+  if (ok) cerrarPanel(); else { carga.guardando = false; renderPanel(); }
+  todo();
+}
+
+async function guardarLista() {
+  const c = carga;
+  const cfg = configParaGuardar(c.cfg);
+  if (!cfg.nombre) return;
+  const items = c.resultado.items.map(it => { const x = it.slice(); x[0] = cfg.nombre; return x; });
+  c.guardando = true; renderPanel();
+  let subida;
+  try {
+    subida = await assets.upload(new Blob([JSON.stringify({ items })], { type: "application/json" }), { type: "application/json" });
+  } catch (e) {
+    c.guardando = false; renderPanel();
+    aviso(e && e.code === "quota_or_state" ? "No hay más espacio para guardar listas en esta página." : "No se pudo subir la lista. Probá de nuevo.");
+    return;
+  }
+  const previa = listasDb.get(cfg.nombre);
+  const doc = { nombre: cfg.nombre, fecha: c.fecha || hoyISO(), subido: new Date().toISOString(), archivo: c.archivo.name, assetId: subida.id,
+    cantidad: items.length, con_unitario: items.filter(it => it[8]).length, raros: c.comparacion ? c.comparacion.raros.length : 0,
+    anterior: previa ? { assetId: previa.assetId, fecha: previa.fecha } : null };
+  const okCfg = await escribir(db.collection("proveedores").doc(idProveedor(cfg.nombre)).set(cfg));
+  const okLista = okCfg && await escribir(db.collection("listas").doc(idProveedor(cfg.nombre)).set(doc));
+  if (!okLista) { c.guardando = false; renderPanel(); return; }
+  // Se guardan la lista actual y la anterior; la de antes de la anterior ya no la usa nadie.
+  if (previa && previa.anterior && previa.anterior.assetId) assets.delete(previa.anterior.assetId).catch(() => {});
+  configs.set(cfg.nombre, { ...configs.get(cfg.nombre), ...cfg, fecha: doc.fecha });
+  listasDb.set(cfg.nombre, doc);
+  crudos.set(cfg.nombre, items);
+  cargadas.set(cfg.nombre, subida.id);
+  activos.add(cfg.nombre);
+  cerrarPanel();
+  todo();
+  aviso(`Lista de ${cfg.nombre} guardada: ${fmtN.format(items.length)} productos${doc.raros ? `, ${doc.raros} precios raros para revisar` : ""}.`);
+}
+
+// ---------- Eventos ----------
+
+const q = document.getElementById("q");
+let t;
+q.addEventListener("input", () => { clearTimeout(t); LIMITE = 120; vista = "buscar"; t = setTimeout(render, 120); });
+document.getElementById("resultados").addEventListener("change", e => {
+  const c = e.target.closest("input[data-k]"); if (!c) return;
+  if (c.checked) seleccion.add(c.dataset.k); else seleccion.delete(c.dataset.k);
+  guardarSeleccion();
+  if (vista === "comparar") return render();
+  c.closest(".fila").classList.toggle("marcada", c.checked);
+  renderBarra();
+});
+document.getElementById("resultados").addEventListener("click", e => {
+  const s = e.target.closest(".sug");
+  if (s) { q.value = s.dataset.q; render(); return; }
+  const corr = e.target.closest("[data-corregir]");
+  if (corr) { editando = corr.dataset.corregir; render(); document.getElementById("corr-unidades")?.focus(); return; }
+  if (e.target.closest("[data-cancelar]")) { editando = null; render(); return; }
+  const quitar = e.target.closest("[data-quitar]");
+  if (quitar) { quitarCorreccion(quitar.dataset.quitar); return; }
+  const ok = e.target.closest("[data-ok]");
+  if (ok) marcarRevisado(ok.dataset.ok, parseFloat(ok.dataset.lista));
+});
+document.getElementById("resultados").addEventListener("submit", e => {
+  const f = e.target.closest("form.corr"); if (!f) return;
+  e.preventDefault();
+  const u = parseFloat(f.elements.unidades.value);
+  if (u > 0) guardarCorreccion(f.dataset.kc, u);
+});
+const irA = v => { vista = v; editando = null; render(); window.scrollTo(0, 0); };
+document.getElementById("barra-comparar").addEventListener("click", () => irA("comparar"));
+document.getElementById("btn-volver").addEventListener("click", () => irA("buscar"));
+document.getElementById("btn-raros").addEventListener("click", () => irA("raros"));
+// Vaciar pide un segundo toque para no perder la selección sin querer.
+for (const id of ["barra-vaciar", "btn-vaciar"]) {
+  const b = document.getElementById(id);
+  const texto = b.textContent;
+  let armado = null;
+  b.addEventListener("click", () => {
+    if (!armado) {
+      b.textContent = "¿Seguro? Tocá de nuevo";
+      armado = setTimeout(() => { b.textContent = texto; armado = null; }, 3000);
+      return;
+    }
+    clearTimeout(armado); armado = null; b.textContent = texto;
+    seleccion.clear(); guardarSeleccion(); render();
+  });
+}
+document.getElementById("limpiar").addEventListener("click", () => { q.value = ""; render(); q.focus(); });
+document.getElementById("orden").addEventListener("change", render);
+document.getElementById("btn-mas").addEventListener("click", () => { LIMITE += 200; render(); });
+document.getElementById("provs").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  const p = b.dataset.p;
+  if (activos.has(p) && activos.size > 1) activos.delete(p); else activos.add(p);
+  renderProvs(); render();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && carga) { cerrarPanel(); return; }
+  if (e.key === "/" && document.activeElement !== q && !carga) { e.preventDefault(); q.focus(); q.select(); }
+});
+
+// Panel de carga
+document.getElementById("btn-cargar").addEventListener("click", () => abrirPanel(null));
+document.getElementById("listas").addEventListener("click", e => {
+  const b = e.target.closest("[data-cargar]"); if (b) abrirPanel(b.dataset.cargar);
+});
+document.getElementById("panel-cerrar").addEventListener("click", cerrarPanel);
+document.getElementById("panel").addEventListener("click", e => { if (e.target.id === "panel") cerrarPanel(); });
+const cuerpo = document.getElementById("panel-cuerpo");
+cuerpo.addEventListener("change", e => {
+  const el = e.target, c = carga; if (!c) return;
+  if (el.id === "cp-prov") return elegirProveedor(el.value);
+  if (el.id === "cp-archivo" && el.files[0]) { c.fechaTocada = false; c.filaTitulos = null; c.hoja = 0; return leerArchivo(el.files[0]); }
+  if (el.id === "cp-iva") { c.cfg.con_iva = el.value === "si"; return renderPanel(); }
+  if (el.id === "cp-desc") { c.cfg.descuento = (parseFloat(el.value) || 0) / 100; return renderPanel(); }
+  if (el.id === "cp-nombre") { c.cfg.nombre = el.value; return procesarArchivo(); }
+  if (el.id === "cp-fecha") { c.fecha = el.value; c.fechaTocada = true; return; }
+  if (el.id === "cp-hoja") { c.hoja = +el.value; c.filaTitulos = null; c.cfg.columnas = null; return procesarArchivo(); }
+  if (el.id === "cp-fila") { c.filaTitulos = Math.max(0, (+el.value || 1) - 1); c.cfg.columnas = null; return procesarArchivo(); }
+  if (el.dataset.col) { c.cfg.columnas = { ...(c.cfg.columnas || {}), [el.dataset.col]: el.value || undefined }; return procesarArchivo(); }
+  if (el.name === "cp-modo" || el.id === "cp-fijas") {
+    const modo = cuerpo.querySelector('input[name="cp-modo"]:checked')?.value;
+    c.cfg.cantEnDesc = modo === "desc";
+    c.cfg.unidadesFijas = modo === "fijas" ? Math.max(1, parseInt(document.getElementById("cp-fijas").value) || 1) : undefined;
+    return procesarArchivo();
+  }
+});
+cuerpo.addEventListener("input", e => { if (e.target.id === "cp-nombre" && carga) carga.cfg.nombre = e.target.value; });
+cuerpo.addEventListener("click", e => {
+  const b = e.target.closest("[data-panel]"); if (!b || !carga) return;
+  if (b.dataset.panel === "cancelar") cerrarPanel();
+  else if (b.dataset.panel === "guardar") guardarLista();
+  else if (b.dataset.panel === "condiciones") guardarCondiciones();
+  else if (b.dataset.panel === "mapear") { carga.mapear = true; carga.filaTitulos = null; carga.cfg.columnas = null; procesarArchivo(); }
+});
+
+q.value = "vaso termico 180";
+todo();
+iniciarBase();
+</script>
