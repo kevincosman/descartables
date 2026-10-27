@@ -146,6 +146,10 @@ mark { background: var(--accent-soft); color: inherit; border-radius: 2px; paddi
 .btn-lleno { font: inherit; font-weight: 700; font-size: 0.9rem; padding: 8px 16px; border-radius: 8px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
 .btn-lleno:disabled { opacity: 0.5; cursor: default; }
 body.con-barra main { padding-bottom: 72px; }
+/* En el plan gratis de Netlify aparece su cartel abajo a la derecha: los botones de la barra quedan por encima. */
+body.con-sello .barra { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+body.con-sello.con-barra main { padding-bottom: 136px; }
+body.con-sello .toast { bottom: calc(148px + env(safe-area-inset-bottom, 0px)); }
 .vista-cab { padding-block: 16px 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .vista-cab h2 { margin: 0; font-family: var(--display); font-stretch: 85%; font-weight: 800; font-size: 1.3rem; text-transform: uppercase; }
 .vista-cab .acciones { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -1429,6 +1433,11 @@ cuerpo.addEventListener("click", e => {
   else if (b.dataset.panel === "condiciones") guardarCondiciones();
   else if (b.dataset.panel === "mapear") { carga.mapear = true; carga.filaTitulos = null; carga.cfg.columnas = null; procesarArchivo(); }
 });
+
+// Netlify agrega su cartel con un script al final de la página, después de este.
+const detectarSello = () => document.body.classList.toggle("con-sello", !!document.querySelector("script[data-nf-variant]"));
+document.addEventListener("DOMContentLoaded", detectarSello);
+detectarSello();
 
 q.value = "vaso termico 180";
 todo();
